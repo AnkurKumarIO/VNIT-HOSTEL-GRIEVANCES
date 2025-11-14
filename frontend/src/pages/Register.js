@@ -13,81 +13,59 @@ function Register() {
     room_number: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // Loading state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      await auth.register(formData);
-      navigate('/login');
+      await auth.register(formData); // Uses updated api.js endpoint
+      navigate('/login'); // Redirect to login after successful registration
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      console.error('Registration error:', err);
+      if (err.response) {
+        setError(err.response.data?.error || 'Registration failed');
+      } else if (err.request) {
+        setError('Server did not respond. Check backend.');
+      } else {
+        setError('Something went wrong. Try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>Register</h2>
+        <h2>VNIT Grievance System</h2>
+        <h3>Register</h3>
         {error && <div className="error">{error}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Student ID</label>
-            <input
-              type="text"
-              value={formData.student_id}
-              onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Hostel</label>
-            <input
-              type="text"
-              value={formData.hostel}
-              onChange={(e) => setFormData({ ...formData, hostel: e.target.value })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Room Number</label>
-            <input
-              type="text"
-              value={formData.room_number}
-              onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
-              required
-            />
-          </div>
-          <button type="submit" className="btn btn-primary">
-            Register
+          {[
+            { label: 'Student ID', name: 'student_id', type: 'text' },
+            { label: 'Email', name: 'email', type: 'email' },
+            { label: 'Name', name: 'name', type: 'text' },
+            { label: 'Password', name: 'password', type: 'password' },
+            { label: 'Hostel', name: 'hostel', type: 'text' },
+            { label: 'Room Number', name: 'room_number', type: 'text' },
+          ].map((field) => (
+            <div className="form-group" key={field.name}>
+              <label>{field.label}</label>
+              <input
+                type={field.type}
+                value={formData[field.name]}
+                onChange={(e) =>
+                  setFormData({ ...formData, [field.name]: e.target.value })
+                }
+                required
+              />
+            </div>
+          ))}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
         <Link to="/login" className="link">
