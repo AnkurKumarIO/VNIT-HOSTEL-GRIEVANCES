@@ -4,41 +4,49 @@ import { auth } from '../api';
 
 function Login() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    student_id: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ student_id: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // Loading state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      console.log('Attempting login...');
-      const response = await auth.login(formData);
-      console.log('Login response:', response.data);
-      
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      const response = await auth.login(formData); // Uses updated api.js endpoint
+      const { token, user } = response.data;
+
+      // Save token & user in localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
       // Redirect based on role
-      const role = response.data.user.role;
-      console.log('User role:', role);
-      
-      if (role === 'resident') {
-        console.log('Navigating to /student-dashboard');
-        navigate('/student-dashboard');
-      } else if (role === 'admin') {
-        console.log('Navigating to /admin-dashboard');
-        navigate('/admin-dashboard');
-      } else if (role === 'worker') {
-        console.log('Navigating to /worker-dashboard');
-        navigate('/worker-dashboard');
+      switch (user.role) {
+        case 'resident':
+          navigate('/student-dashboard');
+          break;
+        case 'admin':
+          navigate('/admin-dashboard');
+          break;
+        case 'worker':
+          navigate('/worker-dashboard');
+          break;
+        default:
+          navigate('/');
+          break;
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Login failed');
+      if (err.response) {
+        setError(err.response.data?.error || 'Login failed');
+      } else if (err.request) {
+        setError('Server did not respond. Check backend.');
+      } else {
+        setError('Something went wrong. Try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,8 +75,8 @@ function Login() {
               required
             />
           </div>
-          <button type="submit" className="btn btn-primary">
-            Login
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <Link to="/register" className="link">
